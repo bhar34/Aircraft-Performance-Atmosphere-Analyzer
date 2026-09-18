@@ -1,0 +1,517 @@
+import java.util.Scanner;
+
+public class AircraftPerformanceAtmosphereAnalyzer {
+
+    // Constants
+    static final double G = 9.80665;          // Gravity (m/s^2)
+    static final double R = 287.05;           // Specific gas constant for air (J/kg.K)
+    static final double GAMMA = 1.4;          // Ratio of specific heats
+    static final double T0 = 288.15;          // Sea-level temperature (K)
+    static final double P0 = 101325.0;        // Sea-level pressure (Pa)
+    static final double RHO0 = 1.225;         // Sea-level density (kg/m^3)
+    static final double LAPSE_RATE = 0.0065;  // Temperature lapse rate (K/m)
+    static final double MU = 1.7894e-5;       // Dynamic viscosity at sea level (Pa.s)
+
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("=================================================");
+        System.out.println("   AIRCRAFT PERFORMANCE & ATMOSPHERE ANALYZER");
+        System.out.println("=================================================");
+
+        boolean running = true;
+
+        while (running) {
+
+            System.out.println("\n--------------- MAIN MENU ----------------");
+            System.out.println("1. Atmosphere Analysis");
+            System.out.println("2. Aircraft Performance Analysis");
+            System.out.println("3. Stall Speed Calculation");
+            System.out.println("4. Mach Number Calculation");
+            System.out.println("5. Lift and Drag Calculation");
+            System.out.println("6. Reynolds Number Calculation");
+            System.out.println("7. Compare Performance at Altitudes");
+            System.out.println("8. Exit");
+            System.out.println("------------------------------------------");
+
+            System.out.print("Enter your choice: ");
+            int choice = scanner.nextInt();
+
+            switch (choice) {
+
+                case 1:
+                    atmosphereAnalysis(scanner);
+                    break;
+
+                case 2:
+                    performanceAnalysis(scanner);
+                    break;
+
+                case 3:
+                    stallSpeedCalculation(scanner);
+                    break;
+
+                case 4:
+                    machCalculation(scanner);
+                    break;
+
+                case 5:
+                    liftDragCalculation(scanner);
+                    break;
+
+                case 6:
+                    reynoldsCalculation(scanner);
+                    break;
+
+                case 7:
+                    altitudeComparison(scanner);
+                    break;
+
+                case 8:
+                    running = false;
+                    System.out.println("\nProgram terminated.");
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+        }
+
+        scanner.close();
+    }
+
+    // ============================================================
+    // ATMOSPHERE ANALYSIS
+    // ============================================================
+
+    static void atmosphereAnalysis(Scanner scanner) {
+
+        System.out.println("\n========== ATMOSPHERE ANALYSIS ==========");
+
+        System.out.print("Enter altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        if (altitude < 0 || altitude > 11000) {
+            System.out.println("This basic ISA model supports 0-11,000 m.");
+            return;
+        }
+
+        Atmosphere atmosphere = calculateAtmosphere(altitude);
+
+        System.out.printf("\nAltitude           : %.2f m%n", altitude);
+        System.out.printf("Temperature        : %.2f K%n", atmosphere.temperature);
+        System.out.printf("Temperature        : %.2f °C%n",
+                atmosphere.temperature - 273.15);
+        System.out.printf("Pressure           : %.2f Pa%n", atmosphere.pressure);
+        System.out.printf("Pressure           : %.2f kPa%n",
+                atmosphere.pressure / 1000.0);
+        System.out.printf("Density            : %.4f kg/m³%n",
+                atmosphere.density);
+        System.out.printf("Speed of Sound     : %.2f m/s%n",
+                atmosphere.speedOfSound);
+        System.out.printf("Speed of Sound     : %.2f km/h%n",
+                atmosphere.speedOfSound * 3.6);
+    }
+
+    // ============================================================
+    // ISA ATMOSPHERE MODEL
+    // ============================================================
+
+    static Atmosphere calculateAtmosphere(double altitude) {
+
+        double temperature =
+                T0 - LAPSE_RATE * altitude;
+
+        double pressure =
+                P0 * Math.pow(
+                        temperature / T0,
+                        G / (R * LAPSE_RATE)
+                );
+
+        double density =
+                pressure / (R * temperature);
+
+        double speedOfSound =
+                Math.sqrt(GAMMA * R * temperature);
+
+        return new Atmosphere(
+                temperature,
+                pressure,
+                density,
+                speedOfSound
+        );
+    }
+
+    // ============================================================
+    // AIRCRAFT PERFORMANCE
+    // ============================================================
+
+    static void performanceAnalysis(Scanner scanner) {
+
+        System.out.println("\n======= AIRCRAFT PERFORMANCE ANALYSIS =======");
+
+        System.out.print("Altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        System.out.print("Aircraft velocity (m/s): ");
+        double velocity = scanner.nextDouble();
+
+        System.out.print("Aircraft mass (kg): ");
+        double mass = scanner.nextDouble();
+
+        System.out.print("Wing area (m²): ");
+        double wingArea = scanner.nextDouble();
+
+        System.out.print("Lift coefficient CL: ");
+        double CL = scanner.nextDouble();
+
+        System.out.print("Drag coefficient CD: ");
+        double CD = scanner.nextDouble();
+
+        Atmosphere atmosphere =
+                calculateAtmosphere(altitude);
+
+        double density = atmosphere.density;
+
+        double dynamicPressure =
+                0.5 * density * velocity * velocity;
+
+        double lift =
+                dynamicPressure * wingArea * CL;
+
+        double drag =
+                dynamicPressure * wingArea * CD;
+
+        double weight =
+                mass * G;
+
+        double mach =
+                velocity / atmosphere.speedOfSound;
+
+        double liftToDrag =
+                lift / drag;
+
+        System.out.println("\n--------------- RESULTS ----------------");
+
+        System.out.printf("Air Density        : %.4f kg/m³%n", density);
+        System.out.printf("Dynamic Pressure   : %.2f Pa%n",
+                dynamicPressure);
+        System.out.printf("Lift               : %.2f N%n", lift);
+        System.out.printf("Drag               : %.2f N%n", drag);
+        System.out.printf("Aircraft Weight    : %.2f N%n", weight);
+        System.out.printf("Mach Number        : %.3f%n", mach);
+        System.out.printf("L/D Ratio          : %.3f%n", liftToDrag);
+
+        if (lift > weight) {
+            System.out.println("Lift condition      : Lift > Weight");
+        } else if (Math.abs(lift - weight) < 0.01 * weight) {
+            System.out.println("Lift condition      : Approximately level flight");
+        } else {
+            System.out.println("Lift condition      : Lift < Weight");
+        }
+
+        if (mach < 0.3) {
+            System.out.println("Flight regime       : Low subsonic");
+        } else if (mach < 0.8) {
+            System.out.println("Flight regime       : Subsonic");
+        } else if (mach < 1.2) {
+            System.out.println("Flight regime       : Transonic");
+        } else if (mach < 5.0) {
+            System.out.println("Flight regime       : Supersonic");
+        } else {
+            System.out.println("Flight regime       : Hypersonic");
+        }
+    }
+
+    // ============================================================
+    // STALL SPEED
+    // ============================================================
+
+    static void stallSpeedCalculation(Scanner scanner) {
+
+        System.out.println("\n========== STALL SPEED CALCULATION ==========");
+
+        System.out.print("Aircraft mass (kg): ");
+        double mass = scanner.nextDouble();
+
+        System.out.print("Wing area (m²): ");
+        double wingArea = scanner.nextDouble();
+
+        System.out.print("Maximum lift coefficient CLmax: ");
+        double CLmax = scanner.nextDouble();
+
+        System.out.print("Altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        Atmosphere atmosphere =
+                calculateAtmosphere(altitude);
+
+        double weight = mass * G;
+
+        double stallSpeed =
+                Math.sqrt(
+                        (2 * weight) /
+                        (atmosphere.density *
+                         wingArea *
+                         CLmax)
+                );
+
+        System.out.printf("\nAir Density : %.4f kg/m³%n",
+                atmosphere.density);
+
+        System.out.printf("Stall Speed : %.2f m/s%n",
+                stallSpeed);
+
+        System.out.printf("Stall Speed : %.2f km/h%n",
+                stallSpeed * 3.6);
+
+        System.out.printf("Stall Speed : %.2f knots%n",
+                stallSpeed * 1.94384);
+    }
+
+    // ============================================================
+    // MACH NUMBER
+    // ============================================================
+
+    static void machCalculation(Scanner scanner) {
+
+        System.out.println("\n========== MACH NUMBER CALCULATION ==========");
+
+        System.out.print("Altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        System.out.print("Aircraft velocity (m/s): ");
+        double velocity = scanner.nextDouble();
+
+        Atmosphere atmosphere =
+                calculateAtmosphere(altitude);
+
+        double mach =
+                velocity / atmosphere.speedOfSound;
+
+        System.out.printf("\nTemperature      : %.2f K%n",
+                atmosphere.temperature);
+
+        System.out.printf("Speed of Sound   : %.2f m/s%n",
+                atmosphere.speedOfSound);
+
+        System.out.printf("Aircraft Speed   : %.2f m/s%n",
+                velocity);
+
+        System.out.printf("Mach Number      : %.3f%n",
+                mach);
+
+        if (mach < 1) {
+            System.out.println("Flow regime      : Subsonic");
+        } else if (Math.abs(mach - 1) < 0.05) {
+            System.out.println("Flow regime      : Approximately Mach 1");
+        } else {
+            System.out.println("Flow regime      : Supersonic");
+        }
+    }
+
+    // ============================================================
+    // LIFT AND DRAG
+    // ============================================================
+
+    static void liftDragCalculation(Scanner scanner) {
+
+        System.out.println("\n========== LIFT & DRAG CALCULATION ==========");
+
+        System.out.print("Altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        System.out.print("Velocity (m/s): ");
+        double velocity = scanner.nextDouble();
+
+        System.out.print("Wing area (m²): ");
+        double area = scanner.nextDouble();
+
+        System.out.print("Lift coefficient CL: ");
+        double CL = scanner.nextDouble();
+
+        System.out.print("Drag coefficient CD: ");
+        double CD = scanner.nextDouble();
+
+        Atmosphere atmosphere =
+                calculateAtmosphere(altitude);
+
+        double dynamicPressure =
+                0.5 * atmosphere.density *
+                velocity * velocity;
+
+        double lift =
+                dynamicPressure * area * CL;
+
+        double drag =
+                dynamicPressure * area * CD;
+
+        System.out.printf("\nDensity          : %.4f kg/m³%n",
+                atmosphere.density);
+
+        System.out.printf("Dynamic Pressure : %.2f Pa%n",
+                dynamicPressure);
+
+        System.out.printf("Lift             : %.2f N%n",
+                lift);
+
+        System.out.printf("Drag             : %.2f N%n",
+                drag);
+
+        System.out.printf("Lift-to-Drag     : %.3f%n",
+                lift / drag);
+    }
+
+    // ============================================================
+    // REYNOLDS NUMBER
+    // ============================================================
+
+    static void reynoldsCalculation(Scanner scanner) {
+
+        System.out.println("\n========== REYNOLDS NUMBER ==========");
+
+        System.out.print("Altitude (m): ");
+        double altitude = scanner.nextDouble();
+
+        System.out.print("Velocity (m/s): ");
+        double velocity = scanner.nextDouble();
+
+        System.out.print("Characteristic length (m): ");
+        double length = scanner.nextDouble();
+
+        Atmosphere atmosphere =
+                calculateAtmosphere(altitude);
+
+        // Sutherland's law approximation
+        double temperature = atmosphere.temperature;
+
+        double viscosity =
+                1.458e-6 *
+                Math.pow(temperature, 1.5) /
+                (temperature + 110.4);
+
+        double Reynolds =
+                atmosphere.density *
+                velocity *
+                length /
+                viscosity;
+
+        System.out.printf("\nDensity        : %.4f kg/m³%n",
+                atmosphere.density);
+
+        System.out.printf("Viscosity      : %.8f Pa.s%n",
+                viscosity);
+
+        System.out.printf("Reynolds Number: %.3e%n",
+                Reynolds);
+
+        if (Reynolds < 5e5) {
+            System.out.println("Flow indication : Relatively low Reynolds number");
+        } else {
+            System.out.println("Flow indication : Relatively high Reynolds number");
+        }
+    }
+
+    // ============================================================
+    // ALTITUDE COMPARISON
+    // ============================================================
+
+    static void altitudeComparison(Scanner scanner) {
+
+        System.out.println("\n======= ALTITUDE PERFORMANCE COMPARISON =======");
+
+        System.out.print("Aircraft velocity (m/s): ");
+        double velocity = scanner.nextDouble();
+
+        System.out.print("Wing area (m²): ");
+        double area = scanner.nextDouble();
+
+        System.out.print("Lift coefficient CL: ");
+        double CL = scanner.nextDouble();
+
+        System.out.print("Drag coefficient CD: ");
+        double CD = scanner.nextDouble();
+
+        System.out.println("\n-------------------------------------------------------------");
+        System.out.printf(
+                "%-12s %-12s %-12s %-12s %-12s%n",
+                "Altitude",
+                "Density",
+                "Mach",
+                "Lift",
+                "Drag"
+        );
+        System.out.println("-------------------------------------------------------------");
+
+        double[] altitudes = {
+                0,
+                2000,
+                5000,
+                8000,
+                10000,
+                11000
+        };
+
+        for (double altitude : altitudes) {
+
+            Atmosphere atmosphere =
+                    calculateAtmosphere(altitude);
+
+            double dynamicPressure =
+                    0.5 *
+                    atmosphere.density *
+                    velocity *
+                    velocity;
+
+            double lift =
+                    dynamicPressure *
+                    area *
+                    CL;
+
+            double drag =
+                    dynamicPressure *
+                    area *
+                    CD;
+
+            double mach =
+                    velocity /
+                    atmosphere.speedOfSound;
+
+            System.out.printf(
+                    "%-12.0f %-12.4f %-12.3f %-12.2f %-12.2f%n",
+                    altitude,
+                    atmosphere.density,
+                    mach,
+                    lift,
+                    drag
+            );
+        }
+
+        System.out.println("-------------------------------------------------------------");
+    }
+
+    // ============================================================
+    // ATMOSPHERE CLASS
+    // ============================================================
+
+    static class Atmosphere {
+
+        double temperature;
+        double pressure;
+        double density;
+        double speedOfSound;
+
+        Atmosphere(
+                double temperature,
+                double pressure,
+                double density,
+                double speedOfSound
+        ) {
+            this.temperature = temperature;
+            this.pressure = pressure;
+            this.density = density;
+            this.speedOfSound = speedOfSound;
+        }
+    }
+}
